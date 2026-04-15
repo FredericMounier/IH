@@ -85,13 +85,6 @@ tbody tr.gone{opacity:.3;pointer-events:none}
 /* Montant négatif */
 .ci.r.neg{color:#c5221f}
 
-/* ── Toggle Dép/Rec ── */
-.stg{display:inline-flex;border-radius:4px;overflow:hidden;border:1px solid #dadce0}
-.stg button{padding:3px 8px;font-size:11px;font-weight:500;cursor:pointer;
-  font-family:inherit;border:none;background:#f8f9fa;color:#5f6368;transition:all .12s}
-.stg button.d{background:#fce8e6;color:#c5221f}
-.stg button.r{background:#e6f4ea;color:#137333}
-
 /* ── Icônes action ── */
 .rac{display:flex;align-items:center;gap:2px;justify-content:flex-end}
 .ib{width:26px;height:26px;border-radius:3px;border:1px solid transparent;
@@ -100,6 +93,7 @@ tbody tr.gone{opacity:.3;pointer-events:none}
 .ib svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;
   stroke-linecap:round;stroke-linejoin:round}
 .ib.dl{color:#bdc1c6}.ib.dl:hover{background:#fce8e6;border-color:#f28b82;color:#c5221f}
+.ib.sv{color:#1a73e8}.ib.sv:hover{background:#e8f0fe;border-color:#aecbfa}
 .ib:disabled{opacity:.4;cursor:not-allowed}
 
 /* ── Bouton ajouter ligne ── */
@@ -186,8 +180,7 @@ tbody tr.gone{opacity:.3;pointer-events:none}
           <th style="width:120px">Complémentaire</th>
           <th style="width:100px">Analytique</th>
           <th style="width:88px" class="r">Montant €</th>
-          <th style="width:80px">Sens</th>
-          <th style="width:40px"></th>
+          <th style="width:56px"></th>
         </tr></thead>
         <tbody id="tbody"></tbody>
         <tfoot id="tfoot"></tfoot>
@@ -369,9 +362,9 @@ function render(){
 
 function mkRow(r,i,accOpts,anaOpts){
   var cls=r._n?'new-row':(r._d?'dirty':'');
-  var dep=r.sens!=='recette';
   var amt=parseFloat(r.amount)||0;
   var amtCls='ci r'+(amt<0?' neg':'');
+  var showSv=r._d||r._n;
   return '<tr class="'+cls+'" id="tr-'+i+'">'
     +'<td><span style="font-size:10px;color:#bdc1c6;font-family:monospace">'+(r.heure||'—')+'</span></td>'
     +'<td><select class="cs" id="acc-'+i+'" onchange="chgAcc('+i+',this)">'+accOpts+'</select></td>'
@@ -380,11 +373,11 @@ function mkRow(r,i,accOpts,anaOpts){
     +'<td><select class="cs" id="ana-'+i+'" onchange="chg('+i+',\'analytical\',this.value)">'+anaOpts+'</select></td>'
     +'<td><input class="'+amtCls+'" id="amt-'+i+'" type="number" step="0.01" value="'+(r.amount||'')+'" '
       +'placeholder="0,00" oninput="chgAmt('+i+',this)"></td>'
-    +'<td><div class="stg">'
-      +'<button class="'+(dep?'d':'')+'" onclick="chgSens('+i+',\'depense\',this)">Dép.</button>'
-      +'<button class="'+(dep?'':'r')+'" onclick="chgSens('+i+',\'recette\',this)">Rec.</button>'
-    +'</div></td>'
     +'<td><div class="rac">'
+      +'<button class="ib sv" id="sv-'+i+'" title="Sauvegarder cette ligne" style="display:'+(showSv?'flex':'none')+'" onclick="saveRow('+i+')">'
+        +'<svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>'
+          +'<polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>'
+      +'</button>'
       +'<button class="ib dl" title="Supprimer" onclick="delRow('+i+')">'
         +'<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/>'
           +'<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>'
@@ -412,16 +405,11 @@ function chgAmt(i,inp){
   rows[i].amount=inp.value; rows[i]._d=true;
   markDirty(i); updateSum();
 }
-function chgSens(i,v,btn){
-  rows[i].sens=v; rows[i]._d=true;
-  var btns=btn.parentElement.querySelectorAll('button');
-  btns[0].className=v==='depense'?'d':'';
-  btns[1].className=v==='recette'?'r':'';
-  markDirty(i); updateSum();
-}
 function markDirty(i){
   var tr=document.getElementById('tr-'+i);
   if(tr) tr.className=rows[i]._n?'new-row':'dirty';
+  var sv=document.getElementById('sv-'+i);
+  if(sv) sv.style.display='flex';
   dirty(true);
 }
 
@@ -470,6 +458,30 @@ async function saveAll(){
   btn.disabled=false;
 }
 
+// ── Sauvegarder une ligne ─────────────────────────────────────────
+async function saveRow(i){
+  var r=rows[i];
+  if(!r.account||r.amount===''){
+    toast('err','Compte et montant requis'); return;
+  }
+  var svBtn=document.getElementById('sv-'+i);
+  var svSvg='<svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>'
+    +'<polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';
+  if(svBtn){ svBtn.disabled=true; svBtn.innerHTML='<span class="spin" style="width:10px;height:10px;border-width:1.5px;border-top-color:#1a73e8"></span>'; }
+  var body=mkBody(r);
+  body.action=r._n?'insert':'update';
+  if(!r._n) body.row_index=r.row_index;
+  try{
+    var res=await gasCall('batchSave',{items:[body]});
+    if(res.errors&&res.errors.length) toast('err',res.errors[0]);
+    else toast('ok','Ligne sauvegardée');
+    await load();
+  }catch(e){
+    toast('err','Erreur : '+e.message);
+    if(svBtn){ svBtn.disabled=false; svBtn.innerHTML=svSvg; }
+  }
+}
+
 // ── Supprimer ─────────────────────────────────────────────────────
 async function delRow(i){
   var r=rows[i];
@@ -500,7 +512,7 @@ function updateSum(){
   var dep=0,rec=0;
   rows.forEach(function(r){
     var a=parseFloat(r.amount)||0;
-    if(r.sens==='recette') rec+=a; else dep+=a;
+    if(a<0) rec+=Math.abs(a); else dep+=a;
   });
   document.getElementById('s-n').textContent=rows.length;
   document.getElementById('s-d').textContent=fmt(dep)+' €';
@@ -515,7 +527,7 @@ function updateSum(){
       +'<td style="text-align:right">'
         +(dep!==0?'<span style="color:#c5221f">'+fmt(dep)+'</span>':'—')
       +'</td>'
-      +'<td colspan="2"></td>'
+      +'<td></td>'
     +'</tr>';
   }
 }
