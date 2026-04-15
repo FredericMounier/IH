@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#f5f5f5}
+body{font-family:'Roboto','Helvetica Neue',Arial,sans-serif;font-size:13px;
+     color:#202124;line-height:1.5}
+
+/* ── Header ── */
+.hdr{background:#fff;border-bottom:1px solid #e8e8e8;padding:10px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 1px 2px rgba(60,64,67,.3),0 1px 3px 1px rgba(60,64,67,.15);
+  position:sticky;top:0;z-index:100}
+.hdr-left{display:flex;align-items:center;gap:10px}
+.hdr-title{font-size:16px;font-weight:500;color:#202124}
+.hdr-right{display:flex;gap:8px}
+
+/* ── Filtres ── */
+.filters{background:#fff;border-bottom:1px solid #e8e8e8;padding:8px 16px;
+  display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.fi{display:flex;align-items:center;gap:8px}
+.fi label{font-size:12px;color:#5f6368;font-weight:500;white-space:nowrap}
+.fi select,.fi input{padding:6px 10px;border:1px solid #dadce0;border-radius:3px;
+  font-size:13px;color:#202124;background:#fff;font-family:inherit;
+  outline:none;transition:border-color .15s;appearance:none}
+.fi select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%235f6368' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 8px center;padding-right:24px}
+.fi select:focus,.fi input:focus{border-color:#1f73e6;box-shadow:0 0 0 2px rgba(31,115,230,.15)}
+input[type=date]{min-width:130px}
+
+/* ── Boutons ── */
+.btn{padding:7px 14px;border:1px solid #dadce0;border-radius:4px;cursor:pointer;
+  font-size:13px;font-weight:500;transition:all .2s;background:#f8f9fa;color:#3c4043;
+  display:inline-flex;align-items:center;gap:6px;font-family:inherit;white-space:nowrap}
+.btn:hover:not(:disabled){background:#f1f3f4;box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:#1f73e6;color:#fff;border-color:#1f73e6}
+.btn-primary:hover:not(:disabled){background:#1765cc}
+
+/* ── Spinner ── */
+.spin{width:14px;height:14px;border:2px solid #e8e8e8;border-top-color:#1f73e6;
+  border-radius:50%;animation:sp .7s linear infinite;display:inline-block;flex-shrink:0}
+.spin-w{border-color:rgba(255,255,255,.3);border-top-color:#fff}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ── State messages ── */
+.state-msg{padding:48px 24px;text-align:center;color:#5f6368;font-size:14px}
+.state-msg svg{width:32px;height:32px;stroke:#dadce0;fill:none;stroke-width:1.5;
+  margin:0 auto 12px;display:block}
+
+/* ── Table card ── */
+.page{padding:16px;padding-bottom:72px}
+.card{background:#fff;border:1px solid #e8e8e8;border-radius:4px;overflow:hidden;
+  box-shadow:0 1px 2px rgba(60,64,67,.3),0 1px 3px 1px rgba(60,64,67,.15)}
+.card-head{padding:12px 16px;border-bottom:1px solid #e8e8e8;background:#f8f9fa;
+  display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:14px;font-weight:600;color:#202124}
+.card-sub{font-size:12px;color:#5f6368}
+
+/* ── Table ── */
+.tscroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:760px}
+thead th{padding:10px 16px;text-align:left;font-weight:600;color:#202124;
+  white-space:nowrap;font-size:12px;border-right:1px solid #f0f0f0;
+  background:#f8f9fa;border-bottom:1px solid #e8e8e8}
+thead th:last-child{border-right:none}
+thead th.r{text-align:right}
+tbody td{padding:9px 16px;border-bottom:1px solid #f0f0f0;color:#202124;
+  border-right:1px solid #f0f0f0;vertical-align:middle}
+tbody td:last-child{border-right:none}
+tbody tr:hover td{background:#f8f9fa}
+tbody tr.dirty td{background:#fffde7!important}
+tbody tr.new-row td{background:#f1f8e9!important}
+tbody tr.gone{opacity:.3;pointer-events:none}
+.total-row td{background:#f0f0f0!important;font-weight:600;
+  border-top:2px solid #e8e8e8;padding:11px 16px}
+
+/* ── Cellules éditables ── */
+.ci,.cs{width:100%;padding:5px 7px;border:1px solid transparent;border-radius:3px;
+  font-size:13px;color:#202124;background:transparent;font-family:inherit;
+  outline:none;transition:all .12s;appearance:none}
+.cs{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%235f6368' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 5px center;padding-right:18px}
+.ci:hover,.cs:hover{border-color:#dadce0;background:#fff}
+.ci:focus,.cs:focus{border-color:#1f73e6;background:#fff;box-shadow:0 0 0 2px rgba(31,115,230,.15)}
+.ci.r{text-align:right;font-family:'Courier New',monospace}
+.ci[readonly]{color:#5f6368;cursor:default;background:transparent!important;border-color:transparent!important}
+
+/* ── Toggle Dép/Rec ── */
+.stg{display:inline-flex;border-radius:3px;overflow:hidden;border:1px solid #dadce0}
+.stg button{padding:4px 8px;font-size:11px;font-weight:600;cursor:pointer;
+  font-family:inherit;border:none;background:#f8f9fa;color:#5f6368;transition:all .12s}
+.stg button.d{background:#fce5e6;color:#d33b27}
+.stg button.r{background:#d4edda;color:#0d652d}
+
+/* ── Badge ── */
+.badge{display:inline-block;padding:2px 6px;border-radius:2px;font-size:11px;font-weight:600}
+.badge-dep{background:#fce5e6;color:#d33b27}
+.badge-rec{background:#d4edda;color:#0d652d}
+
+/* ── Icônes action ── */
+.rac{display:flex;align-items:center;gap:3px;justify-content:flex-end}
+.ib{width:28px;height:28px;border-radius:3px;border:1px solid transparent;
+  background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .12s;flex-shrink:0}
+.ib svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+.ib.sv{color:#0d652d}.ib.sv:hover{background:#d4edda;border-color:#a8d5b5}
+.ib.dl{color:#bbb}.ib.dl:hover{background:#fce5e6;border-color:#e8a0a0;color:#d33b27}
+.ib:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── Bouton ajouter ligne ── */
+.add-btn{display:flex;align-items:center;gap:6px;padding:10px 16px;
+  color:#5f6368;font-size:13px;cursor:pointer;border:none;background:transparent;
+  font-family:inherit;width:100%;text-align:left;transition:color .12s;
+  border-top:1px solid #f0f0f0}
+.add-btn:hover{color:#1f73e6;background:#f8f9fa}
+.add-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5;
+  stroke-linecap:round;stroke-linejoin:round}
+
+/* ── Barre résumé ── */
+.sumbar{position:fixed;bottom:0;left:0;right:0;background:#fff;
+  border-top:1px solid #e8e8e8;padding:9px 16px;display:flex;align-items:center;
+  gap:16px;font-size:12px;color:#5f6368;z-index:50;
+  box-shadow:0 -1px 3px rgba(60,64,67,.15)}
+.sumbar strong{color:#202124;font-family:'Courier New',monospace}
+.s-dep{color:#d33b27} .s-rec{color:#0d652d}
+.vbar{width:1px;height:16px;background:#e8e8e8}
+.dirty-badge{margin-left:auto;background:#fff8e1;color:#9d6200;
+  font-size:11px;font-weight:600;padding:3px 10px;border-radius:2px;border:1px solid #ffe082}
+
+/* ── Toasts ── */
+.toasts{position:fixed;top:14px;right:14px;z-index:9999;
+  display:flex;flex-direction:column;gap:7px}
+.toast{padding:10px 14px;border-radius:4px;font-size:13px;font-weight:500;
+  display:flex;align-items:center;gap:8px;min-width:220px;
+  box-shadow:0 2px 6px rgba(60,64,67,.3);animation:tin .2s ease}
+.toast svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
+.toast.ok{background:#d4edda;color:#0d652d}
+.toast.err{background:#fce5e6;color:#d33b27}
+.toast.info{background:#e8f0fe;color:#1f73e6}
+@keyframes tin{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="hdr-title">Sorties de Caisse</div>
+    <div id="ldg" style="display:none"><span class="spin"></span></div>
+  </div>
+  <div class="hdr-right">
+    <button class="btn" onclick="addRow()" id="btn-add" disabled>+ Ajouter une ligne</button>
+    <button class="btn btn-primary" onclick="saveAll()" id="btn-sv" disabled>✓ Sauvegarder tout</button>
+  </div>
+</div>
+
+<!-- ── Filtres ── -->
+<div class="filters">
+  <div class="fi">
+    <label>Hôtel</label>
+    <select id="sel-hotel" onchange="onFilter()">
+      <option value="">— sélectionner —</option>
+      <option value="LVM">Le Vieux Megève (LVM)</option>
+      <option value="CAB">La Caboche (CAB)</option>
+      <option value="FDM">Ferme du Marie (FDM)</option>
+      <option value="ALP">Alpaga (ALP)</option>
+    </select>
+  </div>
+  <div class="fi">
+    <label>Date</label>
+    <input type="date" id="sel-date" onchange="onFilter()">
+  </div>
+</div>
+
+<!-- ── Contenu ── -->
+<div class="page">
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">Écritures de caisse</span>
+      <span class="card-sub" id="card-sub"></span>
+    </div>
+    <div id="st-empty" class="state-msg">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/>
+        <line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+      Sélectionner un hôtel et une date pour charger les écritures
+    </div>
+    <div class="tscroll">
+      <table id="tbl" style="display:none">
+        <thead><tr>
+          <th style="width:46px">H.</th>
+          <th style="width:155px">Compte</th>
+          <th style="width:150px">Libellé</th>
+          <th style="width:130px">Complémentaire</th>
+          <th style="width:108px">Section analytique</th>
+          <th style="width:90px" class="r">Montant €</th>
+          <th style="width:86px">Sens</th>
+          <th style="width:52px" class="r">⋯</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+        <tfoot id="tfoot"></tfoot>
+      </table>
+    </div>
+    <button class="add-btn" id="btn-add2" onclick="addRow()" style="display:none">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      Ajouter une ligne
+    </button>
+  </div>
+</div>
+
+<div class="sumbar" id="sumbar" style="display:none">
+  <span>Lignes : <strong id="s-n">0</strong></span>
+  <div class="vbar"></div>
+  <span>Dépenses : <strong class="s-dep" id="s-d">0,00 €</strong></span>
+  <div class="vbar"></div>
+  <span>Recettes : <strong class="s-rec" id="s-r">0,00 €</strong></span>
+  <div class="vbar"></div>
+  <span>Solde : <strong id="s-s">0,00 €</strong></span>
+  <span id="dirty-badge" class="dirty-badge" style="display:none">● Non sauvegardé</span>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+// Variables injectées par GAS — bloc isolé, AVANT tout autre JS
+// GAS injecte les valeurs au moment du rendu côté serveur
+window.__GAS = {
+  api:   <?!= JSON.stringify(apiUrl) ?>,
+  hotel: <?!= JSON.stringify(defaultHotel) ?>,
+  date:  <?!= JSON.stringify(defaultDate) ?>
+};
+</script>
+<script>
+// JS applicatif pur — aucun template GAS ici
+var API       = window.__GAS.api;
+var DEF_HOTEL = window.__GAS.hotel;
+var DEF_DATE  = window.__GAS.date;
+
+const ACCOUNTS = [
+  {c:'58010000',l:'Remise ESP'},      {c:'58020000',l:'Remise CH'},
+  {c:'58030000',l:'Remise CB'},       {c:'58040000',l:'Virement bancaire'},
+  {c:'58050000',l:'Remise AE'},       {c:'58060000',l:'Diners'},
+  {c:'44566000',l:'Tva/achats'},
+  {c:'60613000',l:'Carburant'},       {c:'60630000',l:'Petit matériel'},
+  {c:'60630100',l:'Petit mat salle'}, {c:'60631000',l:'Pdt entretien'},
+  {c:'60640000',l:'Fourniture adm'},  {c:'60710000',l:'Achat solide'},
+  {c:'60730000',l:'Achat liquide'},   {c:'61110000',l:'Blanchisserie'},
+  {c:'61400000',l:'Charges locatives'},
+  {c:'62220000',l:'Com.agence Indiv.'},{c:'62220100',l:'Com.agence séminaire'},
+  {c:'62340000',l:'Cadeau client'},   {c:'62385000',l:'Décoration'},
+  {c:'62386000',l:'Presse'},          {c:'62387000',l:'Fleurs'},
+  {c:'62388000',l:'Pdt accueil'},     {c:'62391000',l:'Prestation HH enf.'},
+  {c:'62392000',l:'Animation musicale'},{c:'62410000',l:'Transport'},
+  {c:'62510000',l:'Voyage/déplacement'},{c:'62570000',l:'Frais de réception'},
+  {c:'62610000',l:'Affranchissement'},{c:'63780000',l:'Droit de quai'},
+  {c:'64750000',l:'Pharmacie'},       {c:'64810000',l:'Uniformes'},
+  {c:'65810000',l:'Charge gestion courante'},{c:'67180000',l:'Autre charge ex.'},
+  {c:'42100000',l:'Salaire'},         {c:'42500000',l:'Perso. Acompte'},
+  {c:'46700100',l:'Débours fleurs'},  {c:'46700200',l:'Débours taxi'},
+  {c:'46700800',l:'Débours Pharmacie'},{c:'46700900',l:'Débours presse'},
+  {c:'46701000',l:'Débours divers'},  {c:'46701200',l:'Débours forfait ski'},
+  {c:'46702000',l:'Débours'},         {c:'47100000',l:'Compte attente'},
+  {c:'75810000',l:'Pdt gestion courante'},{c:'77180000',l:'Produit exceptionnel'},
+];
+const AM = {}; ACCOUNTS.forEach(function(a){ AM[a.c]=a.l; });
+
+const ANALYTICAL = [
+  {v:'0',l:'Non affectable'},{v:'1',l:'Salle'},    {v:'2',l:'Cuisine'},
+  {v:'3',l:'Réception'},    {v:'4',l:'Étage'},     {v:'5',l:'Conciergerie'},
+  {v:'6',l:'Spa'},          {v:'7',l:'Maintenance'},{v:'8',l:'Direction'},
+  {v:'9',l:'Synthèse'}
+];
+
+var rows=[], tmpId=-1;
+
+// ── Init ──────────────────────────────────────────────────────────
+(function(){
+  var p=new URLSearchParams(location.search);
+  var h=DEF_HOTEL||(p.get('hotel')||'').toUpperCase();
+  var d=DEF_DATE||p.get('date')||new Date().toISOString().slice(0,10);
+  if(h) document.getElementById('sel-hotel').value=h;
+  document.getElementById('sel-date').value=d;
+  if(h&&d) load();
+})();
+
+function onFilter(){
+  var h=hotel(), d=date();
+  document.getElementById('btn-add').disabled=!(h&&d);
+  if(h&&d) load(); else showSt('Sélectionner un hôtel et une date');
+}
+
+function hotel(){ return document.getElementById('sel-hotel').value; }
+function date(){  return document.getElementById('sel-date').value; }
+
+// ── Charger ───────────────────────────────────────────────────────
+
+// ================================================================
+// gasCall — dispatch vers google.script.run (sidebar) ou fetch (standalone)
+// Règle le problème CORS des POST depuis la sidebar GAS
+// ================================================================
+function inSidebar(){
+  return typeof google !== 'undefined' && google.script && google.script.run;
+}
+
+function gasCall(type, data){
+  return new Promise(function(resolve, reject){
+
+    // ── Mode SIDEBAR : google.script.run (pas de CORS) ────────────
+    if(inSidebar()){
+      var runner = google.script.run
+        .withSuccessHandler(function(result){ resolve(result || {success:true}); })
+        .withFailureHandler(function(err){ reject(new Error(err.message||String(err))); });
+
+      if(type === 'history'){
+        runner.clientGetHistory(data.hotel, data.date);
+      } else if(type === 'write'){
+        var action = data.action || 'insert';
+        if(action === 'delete'){
+          runner.clientDeleteRow(data.row_index);
+        } else if(action === 'update'){
+          runner.clientUpdateRow(data);
+        } else {
+          runner.clientInsertRow(data);
+        }
+      }
+      return;
+    }
+
+    // ── Mode STANDALONE : fetch() ──────────────────────────────────
+    if(type === 'history'){
+      fetch(API+'?action=history&hotel='+data.hotel+'&date='+data.date)
+        .then(function(r){ return r.json(); })
+        .then(resolve).catch(reject);
+    } else {
+      fetch(API, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(data)
+      }).then(function(r){ return r.json(); })
+        .then(function(d){ if(d.error) throw new Error(d.error); resolve(d); })
+        .catch(reject);
+    }
+  });
+}
+
+async function load(){
+  setLdg(true);
+  try{
+    var data = await gasCall('history', {hotel: hotel(), date: date()});
+    rows=(data.rows||[]).map(function(r){ return Object.assign({},r,{_n:false,_d:false}); });
+    render();
+  }catch(e){ toast('err','Erreur chargement : '+e.message); }
+  finally{ setLdg(false); }
+}
+
+// ── Rendu ─────────────────────────────────────────────────────────
+function render(){
+  var hasDirty=rows.some(function(r){ return r._d||r._n; });
+  if(!rows.length){
+    showSt('Aucune écriture — cliquez « Ajouter » pour commencer');
+    document.getElementById('tbl').style.display='none';
+    document.getElementById('btn-add2').style.display='flex';
+    document.getElementById('sumbar').style.display='none';
+    dirty(hasDirty); return;
+  }
+  document.getElementById('st-empty').style.display='none';
+  document.getElementById('tbl').style.display='table';
+  document.getElementById('btn-add2').style.display='flex';
+  document.getElementById('sumbar').style.display='flex';
+  document.getElementById('btn-add').disabled=false;
+
+  // Build compte options once
+  var accOpts='<option value="">— Compte —</option>'
+    +ACCOUNTS.map(function(a){ return '<option value="'+a.c+'">'+a.c+' — '+a.l+'</option>'; }).join('');
+  var anaOpts=ANALYTICAL.map(function(a){ return '<option value="'+a.v+'">'+a.l+'</option>'; }).join('');
+
+  document.getElementById('tbody').innerHTML=rows.map(function(r,i){
+    return mkRow(r,i,accOpts,anaOpts);
+  }).join('');
+
+  // Restore select values (innerHTML assignment doesn't keep selected)
+  rows.forEach(function(r,i){
+    var accSel=document.getElementById('acc-'+i);
+    var anaSel=document.getElementById('ana-'+i);
+    if(accSel) accSel.value=r.account||'';
+    if(anaSel) anaSel.value=r.analytical||'0';
+  });
+
+  updateSum(); dirty(hasDirty);
+}
+
+function mkRow(r,i,accOpts,anaOpts){
+  var isNew=r._n, isDirty=r._d||r._n;
+  var cls=isNew?'new-row':(isDirty?'dirty':'');
+  var dep=r.sens!=='recette';
+  return '<tr class="'+cls+'" id="tr-'+i+'">'
+    +'<td><span style="font-size:10px;color:#94a3b8;font-family:monospace">'+(r.heure||'—')+'</span></td>'
+    // Compte select
+    +'<td><select class="cs" id="acc-'+i+'" onchange="chgAcc('+i+',this)">'
+      +accOpts+'</select></td>'
+    // Libellé (auto, readonly)
+    +'<td><input class="ci" id="lbl-'+i+'" value="'+xe(r.account_label)+'" readonly tabindex="-1" placeholder="—"></td>'
+    // Complémentaire
+    +'<td><input class="ci" value="'+xe(r.complementary_label)+'" placeholder="ex: réparation" '
+      +'oninput="chg('+i+',\'complementary_label\',this.value)"></td>'
+    // Analytique
+    +'<td><select class="cs" id="ana-'+i+'" onchange="chg('+i+',\'analytical\',this.value)">'
+      +anaOpts+'</select></td>'
+    // Montant
+    +'<td><input class="ci r" type="number" step="0.01" min="0" value="'+(r.amount||'')+'" '
+      +'placeholder="0,00" oninput="chg('+i+',\'amount\',this.value)"></td>'
+    // Sens
+    +'<td><div class="stg">'
+      +'<button class="'+(dep?'d':'')+'" onclick="chgSens('+i+',\'depense\',this)">Dép.</button>'
+      +'<button class="'+(dep?'':'r')+'" onclick="chgSens('+i+',\'recette\',this)">Rec.</button>'
+    +'</div></td>'
+    // Actions
+    +'<td><div class="rac">'
+      +(isDirty
+        ?'<button class="ib sv" title="Sauvegarder" onclick="saveRow('+i+')">'
+          +'<svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>'
+          +'<polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>'
+          +'</button>':'')
+      +'<button class="ib dl" title="Supprimer" onclick="delRow('+i+')">'
+        +'<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/>'
+          +'<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>'
+          +'<path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>'
+      +'</button>'
+    +'</div></td>'
+  +'</tr>';
+}
+
+function xe(s){ return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+// ── Changements ───────────────────────────────────────────────────
+function chgAcc(i,sel){
+  rows[i].account=sel.value;
+  rows[i].account_label=AM[sel.value]||'';
+  rows[i]._d=true;
+  var lbl=document.getElementById('lbl-'+i);
+  if(lbl) lbl.value=rows[i].account_label;
+  markDirty(i);
+}
+function chg(i,f,v){ rows[i][f]=v; rows[i]._d=true; markDirty(i); updateSum(); }
+function chgSens(i,v,btn){
+  rows[i].sens=v; rows[i]._d=true;
+  var btns=btn.parentElement.querySelectorAll('button');
+  btns[0].className=v==='depense'?'d':'';
+  btns[1].className=v==='recette'?'r':'';
+  markDirty(i); updateSum();
+}
+
+function markDirty(i){
+  var tr=document.getElementById('tr-'+i);
+  if(tr) tr.className=rows[i]._n?'new-row':'dirty';
+  // Show save button if not already there
+  var rac=tr&&tr.querySelector('.rac');
+  if(rac && !rac.querySelector('.sv')){
+    var svBtn=document.createElement('button');
+    svBtn.className='ib sv'; svBtn.title='Sauvegarder';
+    svBtn.setAttribute('onclick','saveRow('+i+')');
+    svBtn.innerHTML='<svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';
+    rac.insertBefore(svBtn,rac.firstChild);
+  }
+  dirty(true);
+}
+
+// ── Ajouter une ligne ─────────────────────────────────────────────
+function addRow(){
+  if(!hotel()||!date()){ toast('err','Sélectionner un hôtel et une date'); return; }
+  rows.push({row_index:tmpId--,account:'',account_label:'',complementary_label:'',
+    analytical:'0',amount:'',sens:'depense',heure:'',_n:true,_d:false});
+  render();
+  setTimeout(function(){
+    var trs=document.querySelectorAll('#tbody tr');
+    if(trs.length) trs[trs.length-1].scrollIntoView({behavior:'smooth',block:'center'});
+  },40);
+}
+
+// ── Sauvegarder une ligne ─────────────────────────────────────────
+async function saveRow(i){
+  var r=rows[i];
+  if(!r.account||!r.amount){ toast('err','Compte et montant requis'); return; }
+  var tr=document.getElementById('tr-'+i);
+  if(tr) tr.querySelectorAll('button').forEach(function(b){b.disabled=true;});
+  try{
+    var body=mkBody(r);
+    body.action=r._n?'insert':'update';
+    if(!r._n) body.row_index=r.row_index;
+    await gasCall('write', body);
+    toast('ok',(r._n?'Ajouté':'Mis à jour')+' — '+(r.account_label||r.account));
+    await load();
+  }catch(e){
+    toast('err','Erreur : '+e.message);
+    if(tr) tr.querySelectorAll('button').forEach(function(b){b.disabled=false;});
+  }
+}
+
+// ── Sauvegarder tout ─────────────────────────────────────────────
+async function saveAll(){
+  var pend=rows.filter(function(r){ return r._d||r._n; });
+  if(!pend.length){ toast('info','Rien à sauvegarder'); return; }
+  for(var i=0;i<pend.length;i++){
+    if(!pend[i].account||!pend[i].amount){ toast('err','Compte et montant requis sur toutes les lignes'); return; }
+  }
+  var btn=document.getElementById('btn-sv');
+  btn.disabled=true;
+  btn.innerHTML='<span class="spin spin-w"></span> Sauvegarde…';
+  var errs=[];
+  for(var j=0;j<rows.length;j++){
+    var r=rows[j];
+    if(!r._d&&!r._n) continue;
+    if(!r.account||!r.amount) continue;
+    try{
+      var body=mkBody(r);
+      body.action=r._n?'insert':'update';
+      if(!r._n) body.row_index=r.row_index;
+      await gasCall('write', body);
+    }catch(e){ errs.push(e.message); }
+  }
+  if(errs.length) toast('err',errs.length+' erreur(s) : '+errs[0]);
+  else toast('ok',pend.length+' ligne(s) sauvegardée(s)');
+  await load();
+  btn.innerHTML='<svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Sauvegarder tout';
+  btn.disabled=false;
+}
+
+// ── Supprimer ─────────────────────────────────────────────────────
+async function delRow(i){
+  var r=rows[i];
+  if(r._n){ rows.splice(i,1); render(); return; }
+  if(!confirm('Supprimer cette écriture ?')) return;
+  var tr=document.getElementById('tr-'+i);
+  if(tr) tr.className='gone';
+  try{
+    await gasCall('write', {action:'delete', row_index:r.row_index});
+    toast('ok','Écriture supprimée');
+    await load();
+  }catch(e){
+    toast('err','Erreur : '+e.message);
+    if(tr) tr.className='';
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────
+function mkBody(r){
+  return {hotel:hotel(),date:date(),
+    account:r.account, account_label:r.account_label,
+    complementary_label:r.complementary_label||'',
+    analytical:r.analytical||'0', amount:r.amount,
+    sens:r.sens||'depense'};
+}
+
+function updateSum(){
+  var d=0,rec=0;
+  rows.forEach(function(r){ var a=parseFloat(r.amount)||0; if(r.sens==='recette') rec+=a; else d+=a; });
+  document.getElementById('s-n').textContent=rows.length;
+  document.getElementById('s-d').textContent=fmt(d)+' €';
+  document.getElementById('s-r').textContent=fmt(rec)+' €';
+  var s=rec-d, el=document.getElementById('s-s');
+  el.textContent=fmt(Math.abs(s))+' €';
+  el.style.color=s>=0?'#0d652d':'#d33b27';
+  // Ligne total dans tfoot
+  var tf=document.getElementById('tfoot');
+  if(tf && rows.length){
+    tf.innerHTML='<tr class="total-row">'
+      +'<td colspan="5"><strong>Total ('+rows.length+' écriture'+(rows.length>1?'s':'')+')</strong></td>'
+      +'<td style="text-align:right;font-family:Courier New,monospace"><strong>'
+        +(d>0?'<span style=\'color:#d33b27\'>-'+fmt(d)+'</span>':'—')
+        +(rec>0?' / <span style=\'color:#0d652d\'>+'+fmt(rec)+'</span>':'')
+      +'</strong></td>'
+      +'<td colspan="2"><span style="font-size:11px;color:#5f6368">'
+        +(d>0?rows.filter(function(r){return r.sens!=='recette';}).length+' dép. ':'')
+        +(rec>0?rows.filter(function(r){return r.sens==='recette';}).length+' rec.':'')
+      +'</span></td>'
+    +'</tr>';
+  }
+}
+
+function fmt(n){ return n.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+function dirty(v){
+  document.getElementById('dirty-badge').style.display=v?'inline-flex':'none';
+  document.getElementById('btn-sv').disabled=!v;
+}
+
+function showSt(msg){
+  document.getElementById('st-empty').innerHTML=
+    '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/>'
+    +'<line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="3" x2="9" y2="21"/></svg>'+msg;
+  document.getElementById('st-empty').style.display='block';
+}
+
+function setLdg(v){ document.getElementById('ldg').style.display=v?'flex':'none'; }
+
+function toast(t,m){
+  var el=document.createElement('div');
+  el.className='toast '+t;
+  var ic=t==='ok'
+    ?'<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
+    :'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+  el.innerHTML=ic+m;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(function(){ el.remove(); },4000);
+}
+</script>
+</body>
+</html>

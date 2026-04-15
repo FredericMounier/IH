@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:#f1f5f9}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+       font-size:13px;color:#1e293b;display:flex;justify-content:center;padding:20px 12px}
+  .card{background:#fff;border-radius:16px;width:100%;max-width:520px;
+        box-shadow:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);
+        overflow:hidden;align-self:flex-start}
+  .card-head{padding:18px 20px 16px;border-bottom:1px solid #f1f5f9;
+             display:flex;align-items:center;gap:10px}
+  .icon{width:32px;height:32px;background:#f1f5f9;border-radius:8px;
+        display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .icon svg{width:16px;height:16px;stroke:#475569;fill:none;stroke-width:2;
+            stroke-linecap:round;stroke-linejoin:round}
+  .card-head h2{font-size:14px;font-weight:600;color:#0f172a;line-height:1.2}
+  .card-head p{font-size:11px;color:#94a3b8;margin-top:1px}
+  .body{padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .field label{display:block;font-size:10px;font-weight:600;color:#64748b;
+    text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+  .field select,.field input{width:100%;padding:8px 10px;
+    border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1e293b;
+    background:#fff;font-family:inherit;outline:none;transition:border-color .15s;
+    appearance:none}
+  .field select{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+  .field select:focus,.field input:focus{border-color:#2563eb;box-shadow:0 0 0 3px #dbeafe}
+  .batch-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .bbtn{padding:8px 4px;border:1.5px solid #e2e8f0;border-radius:10px;background:#fff;
+    font-size:12px;color:#64748b;cursor:pointer;font-family:inherit;text-align:center;
+    transition:all .15s;font-weight:500}
+  .bbtn.active{background:#eff6ff;border-color:#2563eb;color:#1d4ed8}
+  .divider{border:none;border-top:1px solid #f1f5f9;margin:2px 0}
+  .cta-main{width:100%;padding:13px;background:#1e293b;color:#fff;border:none;
+    border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;
+    display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s}
+  .cta-main:hover{background:#0f172a}
+  .cta-main:disabled{background:#94a3b8;cursor:not-allowed}
+  .sep{width:1px;height:16px;background:rgba(255,255,255,.3);margin:0 4px}
+  .cta-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .cta-sec{padding:9px;border:1.5px solid #e2e8f0;border-radius:10px;background:#fff;
+    font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;color:#475569;
+    display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s}
+  .cta-sec:hover{border-color:#2563eb;color:#1d4ed8;background:#eff6ff}
+  .cta-sec:disabled{opacity:.5;cursor:not-allowed}
+  .alert{padding:10px 12px;border-radius:10px;font-size:12px;display:none;
+         align-items:center;gap:8px}
+  .alert.ok{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+  .alert.err{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+  .result-row{display:none;align-items:center;gap:10px;padding:10px 12px;
+    background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;font-size:12px}
+  .pill{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;
+        background:#EAF3DE;color:#3B6D11}
+  .lnk{color:#2563eb;text-decoration:none;font-weight:500;margin-left:auto;font-size:11px}
+  .lnk:hover{text-decoration:underline}
+  .spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.4);
+        border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+  .spin-dark{border-color:rgba(71,85,105,.3);border-top-color:#475569}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-head">
+    <div class="icon">
+      <svg viewBox="0 0 24 24">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+        <polyline points="10 9 9 9 8 9"/>
+      </svg>
+    </div>
+    <div>
+      <h2>Export Divalto + Feuille de caisse</h2>
+      <p>CSV comptable · Feuille de liaison Google Sheet</p>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="row">
+      <div class="field">
+        <label>Hôtel</label>
+        <select id="hotel">
+          <option value="LVM">Le Vieux Megève (LVM)</option>
+          <option value="CAB">La Caboche (CAB)</option>
+          <option value="FDM">Ferme du Marie (FDM)</option>
+          <option value="ALP">Alpaga (ALP)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Report jour précédent (€)</label>
+        <input type="number" id="report" step="0.01" value="0" placeholder="0.00">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Date début *</label>
+        <input type="date" id="date-debut">
+      </div>
+      <div class="field">
+        <label>Date fin *</label>
+        <input type="date" id="date-fin">
+      </div>
+    </div>
+    <div class="field">
+      <label>Quinzaine</label>
+      <div class="batch-grid">
+        <button class="bbtn active" onclick="setBatch('',this)">Mois entier</button>
+        <button class="bbtn" onclick="setBatch('01-10',this)">1 – 10</button>
+        <button class="bbtn" onclick="setBatch('11-20',this)">11 – 20</button>
+        <button class="bbtn" onclick="setBatch('21-31',this)">21 – fin</button>
+      </div>
+    </div>
+    <hr class="divider">
+
+    <button class="cta-main" id="btn-both" onclick="doBoth()">
+      <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      CSV Divalto
+      <span class="sep"></span>
+      <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/>
+        <line x1="9" y1="9" x2="9" y2="21"/>
+      </svg>
+      Feuille de caisse
+    </button>
+
+    <div class="cta-row">
+      <button class="cta-sec" id="btn-csv" onclick="doCsvOnly()">
+        <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        CSV seulement
+      </button>
+      <button class="cta-sec" id="btn-sheet" onclick="doSheetOnly()">
+        <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/>
+          <line x1="9" y1="9" x2="9" y2="21"/>
+        </svg>
+        Feuille seulement
+      </button>
+    </div>
+
+    <div class="alert ok" id="msg-ok" style="display:none">
+      <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#16a34a;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+      <span id="ok-text"></span>
+    </div>
+    <div class="alert err" id="msg-err" style="display:none">
+      <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#dc2626;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span id="err-text"></span>
+    </div>
+    <div class="result-row" id="sheet-result">
+      <span class="pill">Feuille créée</span>
+      <span id="sheet-name" style="color:#475569;font-size:11px"></span>
+      <a id="sheet-link" class="lnk" href="#" target="_blank">Ouvrir →</a>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Variables injectées par Apps Script ──────────────────────────
+const API = <?!= JSON.stringify(apiUrl) ?>;
+
+// État batch courant
+var batch = '';
+
+// ── Pré-remplissage depuis les variables template GAS ────────────
+(function prefill() {
+  var h  = <?!= JSON.stringify(defaultHotel) ?>;
+  var dd = <?!= JSON.stringify(defaultDateDebut) ?>;
+  var df = <?!= JSON.stringify(defaultDateFin) ?>;
+  var rp = <?!= JSON.stringify(defaultReport) ?>;
+  var bt = <?!= JSON.stringify(defaultBatch) ?>;
+
+  if (h)  document.getElementById('hotel').value      = h;
+  if (dd) document.getElementById('date-debut').value = dd;
+  if (df) document.getElementById('date-fin').value   = df;
+  if (rp && rp !== '0') document.getElementById('report').value = rp;
+
+  // Active le bon bouton batch si valeur présente
+  if (bt) {
+    batch = bt;
+    document.querySelectorAll('.bbtn').forEach(function(b) {
+      b.classList.remove('active');
+      if (b.getAttribute('onclick') === "setBatch('" + bt + "',this)")
+        b.classList.add('active');
+    });
+  }
+})();
+
+// ── Fonctions formulaire ─────────────────────────────────────────
+function setBatch(v, btn) {
+  batch = v;
+  document.querySelectorAll('.bbtn').forEach(function(b) {
+    b.classList.remove('active');
+  });
+  btn.classList.add('active');
+}
+
+function getP() {
+  return {
+    hotel:      document.getElementById('hotel').value,
+    date_debut: document.getElementById('date-debut').value,
+    date_fin:   document.getElementById('date-fin').value,
+    report:     document.getElementById('report').value || '0',
+    batch:      batch
+  };
+}
+
+function buildUrl(action, p) {
+  var u = API + '?action=' + action
+    + '&hotel='      + encodeURIComponent(p.hotel)
+    + '&date_debut=' + p.date_debut
+    + '&date_fin='   + p.date_fin
+    + '&report='     + p.report;
+  if (p.batch) u += '&batch=' + encodeURIComponent(p.batch);
+  return u;
+}
+
+// ── Actions ──────────────────────────────────────────────────────
+async function doBoth() {
+  var p = getP();
+  if (!p.date_debut || !p.date_fin) return show('err', 'Dates obligatoires');
+  hide('ok'); hide('err');
+  document.getElementById('sheet-result').style.display = 'none';
+  setLoading(true);
+  try {
+    await downloadCsv(buildUrl('csv', p), p);
+    var url = await fetchSheetUrl(buildUrl('sheet', p));
+    showSheet(p, url);
+    show('ok', 'CSV téléchargé · Feuille de caisse créée');
+  } catch(e) {
+    show('err', e.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function doCsvOnly() {
+  var p = getP();
+  if (!p.date_debut || !p.date_fin) return show('err', 'Dates obligatoires');
+  hide('ok'); hide('err');
+  setLoading(true, 'csv');
+  try {
+    await downloadCsv(buildUrl('csv', p), p);
+    show('ok', 'CSV téléchargé');
+  } catch(e) {
+    show('err', e.message);
+  } finally {
+    setLoading(false, 'csv');
+  }
+}
+
+async function doSheetOnly() {
+  var p = getP();
+  if (!p.date_debut || !p.date_fin) return show('err', 'Dates obligatoires');
+  hide('ok'); hide('err');
+  setLoading(true, 'sheet');
+  try {
+    var url = await fetchSheetUrl(buildUrl('sheet', p));
+    showSheet(p, url);
+    show('ok', 'Feuille de caisse créée');
+  } catch(e) {
+    show('err', e.message);
+  } finally {
+    setLoading(false, 'sheet');
+  }
+}
+
+// ── Helpers fetch ─────────────────────────────────────────────────
+async function downloadCsv(url, p) {
+  var res = await fetch(url);
+  if (!res.ok) {
+    var e = await res.json();
+    throw new Error(e.error || 'Erreur CSV');
+  }
+  var blob  = await res.blob();
+  var burl  = URL.createObjectURL(blob);
+  var a     = document.createElement('a');
+  var month = p.date_debut.slice(0, 7).replace('-', '');
+  var bl    = p.batch ? '_' + p.batch : '';
+  a.download = 'Import_Divalto_' + p.hotel + bl + '_' + month + '.csv';
+  a.href = burl;
+  document.body.appendChild(a);
+  a.click();
+  URL.revokeObjectURL(burl);
+  document.body.removeChild(a);
+}
+
+async function fetchSheetUrl(url) {
+  var res  = await fetch(url);
+  var data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data.url;
+}
+
+function showSheet(p, url) {
+  var bl = p.batch ? ' ' + p.batch : '';
+  document.getElementById('sheet-name').textContent =
+    p.hotel + bl + ' · ' + p.date_debut + ' → ' + p.date_fin;
+  document.getElementById('sheet-link').href = url;
+  document.getElementById('sheet-result').style.display = 'flex';
+}
+
+// ── Loading state ─────────────────────────────────────────────────
+function setLoading(on, which) {
+  var bBoth = document.getElementById('btn-both');
+  var bCsv  = document.getElementById('btn-csv');
+  var bSh   = document.getElementById('btn-sheet');
+  bBoth.disabled = bCsv.disabled = bSh.disabled = on;
+
+  var iconDl  = '<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+  var iconGrid = '<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/></svg>';
+
+  if (on) {
+    if (!which)          bBoth.innerHTML = '<div class="spin"></div> Génération en cours…';
+    if (which === 'csv') bCsv.innerHTML  = '<div class="spin spin-dark"></div> CSV…';
+    if (which === 'sheet') bSh.innerHTML = '<div class="spin spin-dark"></div> Sheet…';
+  } else {
+    bBoth.innerHTML = iconDl + ' CSV Divalto <span class="sep"></span> ' + iconGrid + ' Feuille de caisse';
+    bCsv.innerHTML  = 'CSV seulement';
+    bSh.innerHTML   = 'Feuille seulement';
+  }
+}
+
+function show(t, m) {
+  var el = document.getElementById('msg-' + t);
+  document.getElementById(t + '-text').textContent = m;
+  el.style.display = 'flex';
+}
+function hide(t) {
+  document.getElementById('msg-' + t).style.display = 'none';
+}
+</script>
+</body>
+</html>
