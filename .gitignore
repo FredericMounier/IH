@@ -1,0 +1,27 @@
+# Configuration locale (contient des identifiants)
+config/config.ini
+
+# Fichiers temporaires Divalto
+*.tmp
+*.bak
+*.log
+
+# Fichiers compilés
+*.obj
+*.exe
+*.dll
+
+# Répertoires de build
+build/
+dist/
+bin/
+
+# Fichiers OS
+.DS_Store
+Thumbs.db
+
+# Fichiers IDE
+.vscode/
+.idea/
+*.suo
+*.user
