@@ -1,6 +1,8 @@
-# Sorties de Caisse — Google Apps Script
+# Divalto — Sorties de Caisse
 
-Application Google Apps Script liée au Google Sheet :
+Projet Google Apps Script pour la gestion des sorties de caisse et export Divalto.
+
+Liée au Google Sheet :
 `https://docs.google.com/spreadsheets/d/1hGrdm2-g6jtCWQ_GntoA3-s_7fwFmycw17tM_Vy0n5U`
 
 Hôtels : **LVM** (Le Vieux Megève) · **CAB** (La Caboche) · **FDM** (Ferme du Marie) · **ALP** (Alpaga)
