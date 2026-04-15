@@ -127,6 +127,10 @@ function doGet(e) {
     return jsonOut(getHistory(hotel, date));
   }
 
+  if (action === 'allData') {
+    return jsonOut({ rows: clientGetAllSheetData() });
+  }
+
   if (action === 'preview') {
     try {
       callBqProc(dateDebut, dateFin, batch || null, 'PREVIEW');
