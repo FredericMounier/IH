@@ -418,13 +418,8 @@ function mkRow(r,i,accOpts,anaOpts){
       +'<button class="'+(dep?'d':'')+'" onclick="chgSens('+i+',\'depense\',this)">Dép.</button>'
       +'<button class="'+(dep?'':'r')+'" onclick="chgSens('+i+',\'recette\',this)">Rec.</button>'
     +'</div></td>'
-    // Actions
+    // Actions (supprimer uniquement)
     +'<td><div class="rac">'
-      +(isDirty
-        ?'<button class="ib sv" title="Sauvegarder" onclick="saveRow('+i+')">'
-          +'<svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>'
-          +'<polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>'
-          +'</button>':'')
       +'<button class="ib dl" title="Supprimer" onclick="delRow('+i+')">'
         +'<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/>'
           +'<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>'
@@ -457,15 +452,6 @@ function chgSens(i,v,btn){
 function markDirty(i){
   var tr=document.getElementById('tr-'+i);
   if(tr) tr.className=rows[i]._n?'new-row':'dirty';
-  // Show save button if not already there
-  var rac=tr&&tr.querySelector('.rac');
-  if(rac && !rac.querySelector('.sv')){
-    var svBtn=document.createElement('button');
-    svBtn.className='ib sv'; svBtn.title='Sauvegarder';
-    svBtn.setAttribute('onclick','saveRow('+i+')');
-    svBtn.innerHTML='<svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';
-    rac.insertBefore(svBtn,rac.firstChild);
-  }
   dirty(true);
 }
 
@@ -479,25 +465,6 @@ function addRow(){
     var trs=document.querySelectorAll('#tbody tr');
     if(trs.length) trs[trs.length-1].scrollIntoView({behavior:'smooth',block:'center'});
   },40);
-}
-
-// ── Sauvegarder une ligne ─────────────────────────────────────────
-async function saveRow(i){
-  var r=rows[i];
-  if(!r.account||!r.amount){ toast('err','Compte et montant requis'); return; }
-  var tr=document.getElementById('tr-'+i);
-  if(tr) tr.querySelectorAll('button').forEach(function(b){b.disabled=true;});
-  try{
-    var body=mkBody(r);
-    body.action=r._n?'insert':'update';
-    if(!r._n) body.row_index=r.row_index;
-    await gasCall('write', body);
-    toast('ok',(r._n?'Ajouté':'Mis à jour')+' — '+(r.account_label||r.account));
-    await load();
-  }catch(e){
-    toast('err','Erreur : '+e.message);
-    if(tr) tr.querySelectorAll('button').forEach(function(b){b.disabled=false;});
-  }
 }
 
 // ── Sauvegarder tout ─────────────────────────────────────────────
