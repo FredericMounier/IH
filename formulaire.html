@@ -175,6 +175,9 @@ tbody tr.gone{opacity:.3;pointer-events:none}
     <label>Date</label>
     <input type="date" id="sel-date" onchange="onFilter()">
   </div>
+  <div class="fi">
+    <button class="btn" onclick="showHistoryModal()" title="Voir les autres dates">📅 Autres dates</button>
+  </div>
 </div>
 
 <!-- ── Contenu ── -->
@@ -222,6 +225,25 @@ tbody tr.gone{opacity:.3;pointer-events:none}
   <span>Solde : <strong id="s-s">0,00 €</strong></span>
   <span id="dirty-badge" class="dirty-badge" style="display:none">● Non sauvegardé</span>
 </div>
+
+<!-- ── Modal Historique ── -->
+<div id="hist-modal" onclick="if(event.target===this) hideHistoryModal()" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,.5);z-index:9998;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:8px;padding:20px;max-width:600px;max-height:80vh;
+    overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,.3);width:90%;animation:modalIn .2s ease">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h2 style="font-size:16px;font-weight:600;color:#202124">📅 Historique des saisies</h2>
+      <button onclick="hideHistoryModal()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#5f6368;padding:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    <div id="hist-list" style="font-size:13px;color:#5f6368">
+      <div style="text-align:center;padding:20px"><span class="spin"></span></div>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes modalIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+</style>
 
 <div class="toasts" id="toasts"></div>
 
@@ -573,6 +595,76 @@ function toast(t,m){
   el.innerHTML=ic+m;
   document.getElementById('toasts').appendChild(el);
   setTimeout(function(){ el.remove(); },4000);
+}
+
+// ── Historique des dates ──────────────────────────────────────────
+async function showHistoryModal(){
+  var modal=document.getElementById('hist-modal');
+  var list=document.getElementById('hist-list');
+  modal.style.display='flex';
+  list.innerHTML='<div style="text-align:center;padding:20px"><span class="spin"></span> Chargement...</div>';
+
+  try{
+    setLdg(true);
+    var fullHistory=await getAllSheetData();
+    setLdg(false);
+
+    var byDateHotel={};
+    fullHistory.forEach(function(r){
+      if(!r.date || r.hotel==='Hotel') return;
+      var key=r.date+'|'+r.hotel;
+      if(!byDateHotel[key]) byDateHotel[key]={date:r.date, hotel:r.hotel, count:0, amount:0};
+      byDateHotel[key].count++;
+      byDateHotel[key].amount+=r.amount||0;
+    });
+
+    var dates=Object.keys(byDateHotel).sort().reverse();
+    if(!dates.length){
+      list.innerHTML='<div style="padding:16px;text-align:center;color:#94a3b8">Aucune saisie trouvée</div>';
+      return;
+    }
+
+    var html='<div style="display:flex;flex-direction:column;gap:8px">';
+    dates.forEach(function(key){
+      var item=byDateHotel[key];
+      html+='<button onclick="loadHistoryItem(\''+item.date+'\',\''+item.hotel+'\')" '
+        +'style="padding:12px;border:1px solid #e8e8e8;border-radius:4px;text-align:left;'
+        +'background:#f8f9fa;cursor:pointer;transition:all .2s;font-family:inherit;font-size:13px"'
+        +' onmouseover="this.style.background=\'#f1f3f4\'" onmouseout="this.style.background=\'#f8f9fa\'">'
+        +'<div style="font-weight:600;color:#202124">'+item.date+' · '+item.hotel+'</div>'
+        +'<div style="font-size:11px;color:#5f6368">'+item.count+' écriture'+(item.count>1?'s':'')+' — '+fmt(item.amount)+' €</div>'
+        +'</button>';
+    });
+    html+='</div>';
+    list.innerHTML=html;
+  }catch(e){
+    list.innerHTML='<div style="padding:16px;color:#d33b27">Erreur : '+e.message+'</div>';
+  }
+}
+
+function hideHistoryModal(){
+  document.getElementById('hist-modal').style.display='none';
+}
+
+async function getAllSheetData(){
+  if(inSidebar()){
+    // En sidebar: utiliser google.script.run pour accéder au Sheet
+    return new Promise(function(resolve, reject){
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(function(err){ reject(new Error(err)); })
+        .clientGetAllSheetData();
+    });
+  }
+  // En standalone: retourner les données actuelles (limitation)
+  return rows;
+}
+
+function loadHistoryItem(date, hotel){
+  hideHistoryModal();
+  document.getElementById('sel-hotel').value=hotel;
+  document.getElementById('sel-date').value=date;
+  load();
 }
 </script>
 </body>

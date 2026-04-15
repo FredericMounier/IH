@@ -550,6 +550,30 @@ function clientDeleteRow(rowIndex) {
   return { success: true };
 }
 
+function clientGetAllSheetData() {
+  var ss    = SpreadsheetApp.openById(SHEET_ID);
+  var sheet = ss.getSheetByName(SHEET_NAME) || ss.getSheets()[0];
+  var data  = sheet.getDataRange().getValues();
+  var result = [];
+
+  for (var i = 1; i < data.length; i++) {
+    var r = data[i];
+    result.push({
+      hotel:               String(r[0] || ''),
+      date:                formatDateVal(r[1] || ''),
+      account:             String(r[2] || ''),
+      account_label:       String(r[3] || ''),
+      complementary_label: String(r[4] || ''),
+      analytical:          String(r[5] || ''),
+      analytical_label:    String(r[6] || ''),
+      amount:              parseFloat(r[7]) || 0,
+      type:                String(r[8] || ''),
+      created:             String(r[9] || '')
+    });
+  }
+  return result;
+}
+
 function jsonOut(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
