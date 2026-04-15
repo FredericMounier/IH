@@ -85,6 +85,10 @@ tbody tr.gone{opacity:.3;pointer-events:none}
 /* Montant négatif */
 .ci.r.neg{color:#c5221f}
 
+/* ── Colonne date (mode période) ── */
+.col-date{display:none}
+table.range-mode .col-date{display:table-cell}
+
 /* ── Icônes action ── */
 .rac{display:flex;align-items:center;gap:2px;justify-content:flex-end}
 .ib{width:26px;height:26px;border-radius:3px;border:1px solid transparent;
@@ -156,6 +160,8 @@ tbody tr.gone{opacity:.3;pointer-events:none}
   <div class="fi">
     <label>Date</label>
     <input type="date" id="sel-date" onchange="onFilter()">
+    <span style="color:#80868b;font-size:11px;margin:0 2px">au</span>
+    <input type="date" id="sel-dateto" onchange="onFilter()" title="Laisser vide pour une seule date">
   </div>
 </div>
 
@@ -175,6 +181,7 @@ tbody tr.gone{opacity:.3;pointer-events:none}
       <table id="tbl" style="display:none">
         <thead><tr>
           <th style="width:44px">H.</th>
+          <th class="col-date" style="width:80px">Date</th>
           <th style="width:150px">Compte</th>
           <th style="width:140px">Libellé</th>
           <th style="width:120px">Complémentaire</th>
@@ -253,7 +260,7 @@ const ANALYTICAL = [
   {v:'9',l:'Synthèse'}
 ];
 
-var rows=[], tmpId=-1;
+var rows=[], tmpId=-1, rangeMode=false;
 
 (function(){
   var p=new URLSearchParams(location.search);
@@ -265,13 +272,16 @@ var rows=[], tmpId=-1;
 })();
 
 function onFilter(){
-  var h=hotel(), d=date();
-  document.getElementById('btn-add').disabled=!(h&&d);
-  if(h&&d) load(); else showSt('Sélectionner un hôtel et une date');
+  var h=hotel(), d=date(), dt=dateto();
+  rangeMode = !!(dt && dt>d);
+  document.getElementById('btn-add').disabled=!(h&&d)||rangeMode;
+  if(h&&d) { if(rangeMode) loadRange(); else load(); }
+  else showSt('Sélectionner un hôtel et une date');
 }
 
-function hotel(){ return document.getElementById('sel-hotel').value; }
-function date(){  return document.getElementById('sel-date').value; }
+function hotel(){  return document.getElementById('sel-hotel').value; }
+function date(){   return document.getElementById('sel-date').value; }
+function dateto(){ var v=document.getElementById('sel-dateto').value; return v && v>=date() ? v : ''; }
 
 // ── gasCall ───────────────────────────────────────────────────────
 function inSidebar(){
@@ -287,6 +297,8 @@ function gasCall(type, data){
 
       if(type==='history'){
         runner.clientGetHistory(data.hotel, data.date);
+      } else if(type==='range'){
+        runner.clientGetRangeData(data.hotel, data.dateStart, data.dateEnd);
       } else if(type==='batchSave'){
         runner.clientBatchSave(data.items);
       } else if(type==='write'){
@@ -299,6 +311,9 @@ function gasCall(type, data){
     }
     if(type==='history'){
       fetch(API+'?action=history&hotel='+data.hotel+'&date='+data.date)
+        .then(function(r){return r.json();}).then(resolve).catch(reject);
+    } else if(type==='range'){
+      fetch(API+'?action=range&hotel='+data.hotel+'&date='+data.dateStart+'&date_to='+data.dateEnd)
         .then(function(r){return r.json();}).then(resolve).catch(reject);
     } else if(type==='batchSave'){
       fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},
@@ -315,7 +330,17 @@ function gasCall(type, data){
   });
 }
 
-// ── Charger ───────────────────────────────────────────────────────
+// ── Charger (date unique) ─────────────────────────────────────────
+async function loadRange(){
+  setLdg(true);
+  try{
+    var data=await gasCall('range',{hotel:hotel(),dateStart:date(),dateEnd:dateto()});
+    rows=(data.rows||[]).map(function(r){return Object.assign({},r,{_n:false,_d:false});});
+    render();
+  }catch(e){ toast('err','Erreur : '+e.message); }
+  finally{ setLdg(false); }
+}
+
 async function load(){
   setLdg(true);
   try{
@@ -338,9 +363,10 @@ function render(){
   }
   document.getElementById('st-empty').style.display='none';
   document.getElementById('tbl').style.display='table';
-  document.getElementById('btn-add2').style.display='flex';
+  document.getElementById('tbl').className=rangeMode?'range-mode':'';
+  document.getElementById('btn-add2').style.display=rangeMode?'none':'flex';
   document.getElementById('sumbar').style.display='flex';
-  document.getElementById('btn-add').disabled=false;
+  document.getElementById('btn-add').disabled=rangeMode;
 
   var accOpts='<option value="">— Compte —</option>'
     +ACCOUNTS.map(function(a){return '<option value="'+a.c+'">'+a.c+' — '+a.l+'</option>';}).join('');
@@ -367,6 +393,7 @@ function mkRow(r,i,accOpts,anaOpts){
   var showSv=r._d||r._n;
   return '<tr class="'+cls+'" id="tr-'+i+'">'
     +'<td><span style="font-size:10px;color:#bdc1c6;font-family:monospace">'+(r.heure||'—')+'</span></td>'
+    +'<td class="col-date"><span style="font-size:11px">'+xe(r.date||'')+'</span></td>'
     +'<td><select class="cs" id="acc-'+i+'" onchange="chgAcc('+i+',this)">'+accOpts+'</select></td>'
     +'<td><input class="ci" id="lbl-'+i+'" value="'+xe(r.account_label)+'" readonly tabindex="-1" placeholder="—"></td>'
     +'<td><input class="ci" value="'+xe(r.complementary_label)+'" placeholder="ex: réparation" oninput="chg('+i+',\'complementary_label\',this.value)"></td>'
@@ -501,7 +528,7 @@ async function delRow(i){
 
 // ── Helpers ───────────────────────────────────────────────────────
 function mkBody(r){
-  return {hotel:hotel(),date:date(),
+  return {hotel:hotel(),date:r.date||date(),
     account:r.account,account_label:r.account_label,
     complementary_label:r.complementary_label||'',
     analytical:r.analytical||'0',amount:r.amount,
@@ -523,7 +550,7 @@ function updateSum(){
   var tf=document.getElementById('tfoot');
   if(tf&&rows.length){
     tf.innerHTML='<tr class="total-row">'
-      +'<td colspan="5" style="font-size:11px;color:#5f6368">'+rows.length+' écriture'+(rows.length>1?'s':'')+'</td>'
+      +'<td colspan="'+(rangeMode?6:5)+'" style="font-size:11px;color:#5f6368">'+rows.length+' écriture'+(rows.length>1?'s':'')+'</td>'
       +'<td style="text-align:right">'
         +(dep!==0?'<span style="color:#c5221f">'+fmt(dep)+'</span>':'—')
       +'</td>'

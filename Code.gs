@@ -127,6 +127,10 @@ function doGet(e) {
     return jsonOut(getHistory(hotel, date));
   }
 
+  if (action === 'range') {
+    return jsonOut(clientGetRangeData(hotel, date, e.parameter.date_to || ''));
+  }
+
   if (action === 'allData') {
     return jsonOut({ rows: clientGetAllSheetData() });
   }
@@ -532,6 +536,32 @@ function formatHeureVal(val) {
 
 function clientGetHistory(hotel, date) {
   return getHistory(hotel, date);
+}
+
+function clientGetRangeData(hotel, dateStart, dateEnd) {
+  if (!hotel || !dateStart || !dateEnd) return { rows: [] };
+  var ss    = SpreadsheetApp.openById(SHEET_ID);
+  var sheet = ss.getSheetByName(SHEET_NAME) || ss.getSheets()[0];
+  var data  = sheet.getDataRange().getValues();
+  var rows  = [];
+  for (var i = 1; i < data.length; i++) {
+    var r = data[i];
+    if (String(r[0]).toUpperCase() !== hotel) continue;
+    var d = formatDateVal(r[1]);
+    if (d < dateStart || d > dateEnd) continue;
+    rows.push({
+      row_index:           i + 1,
+      date:                d,
+      account:             String(r[2]),
+      account_label:       String(r[3]),
+      complementary_label: String(r[4]),
+      analytical:          String(r[5]),
+      amount:              parseFloat(r[7]) || 0,
+      sens:                String(r[8]) === 'Entrée de caisse' ? 'recette' : 'depense',
+      heure:               formatHeureVal(r[9])
+    });
+  }
+  return { rows: rows };
 }
 
 function clientInsertRow(data) {
