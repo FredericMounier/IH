@@ -229,14 +229,27 @@ tbody tr.gone{opacity:.3;pointer-events:none}
 <!-- ── Modal Historique ── -->
 <div id="hist-modal" onclick="if(event.target===this) hideHistoryModal()" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;
   background:rgba(0,0,0,.5);z-index:9998;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:8px;padding:20px;max-width:600px;max-height:80vh;
+  <div style="background:#fff;border-radius:8px;padding:20px;max-width:700px;max-height:80vh;
     overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,.3);width:90%;animation:modalIn .2s ease">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <h2 style="font-size:16px;font-weight:600;color:#202124">📅 Historique des saisies</h2>
       <button onclick="hideHistoryModal()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#5f6368;padding:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center">✕</button>
     </div>
+
+    <!-- Sélecteur date/hôtel dans la modal -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #e8e8e8">
+      <select id="hist-hotel" onchange="loadHistoryPreview()" style="padding:6px 10px;border:1px solid #dadce0;border-radius:3px;font-size:12px;flex:1;appearance:none;background-image:url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2710%27%20height=%2710%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%235f6368%27%20stroke-width=%272%27%3E%3Cpolyline%20points=%276%209%2012%2015%2018%209%27/%3E%3C/svg%3E);background-repeat:no-repeat;background-position:right 8px center;padding-right:24px">
+        <option value="">— Hôtel —</option>
+        <option value="LVM">LVM</option>
+        <option value="CAB">CAB</option>
+        <option value="FDM">FDM</option>
+        <option value="ALP">ALP</option>
+      </select>
+      <input type="date" id="hist-date" onchange="loadHistoryPreview()" style="padding:6px 10px;border:1px solid #dadce0;border-radius:3px;font-size:12px;flex:1;min-width:130px">
+    </div>
+
     <div id="hist-list" style="font-size:13px;color:#5f6368">
-      <div style="text-align:center;padding:20px"><span class="spin"></span></div>
+      <div style="text-align:center;padding:20px;color:#94a3b8">Sélectionner hôtel et date</div>
     </div>
   </div>
 </div>
@@ -598,73 +611,72 @@ function toast(t,m){
 }
 
 // ── Historique des dates ──────────────────────────────────────────
-async function showHistoryModal(){
+function showHistoryModal(){
   var modal=document.getElementById('hist-modal');
-  var list=document.getElementById('hist-list');
   modal.style.display='flex';
-  list.innerHTML='<div style="text-align:center;padding:20px"><span class="spin"></span> Chargement...</div>';
-
-  try{
-    setLdg(true);
-    var fullHistory=await getAllSheetData();
-    setLdg(false);
-
-    var byDateHotel={};
-    fullHistory.forEach(function(r){
-      if(!r.date || r.hotel==='Hotel') return;
-      var key=r.date+'|'+r.hotel;
-      if(!byDateHotel[key]) byDateHotel[key]={date:r.date, hotel:r.hotel, count:0, amount:0};
-      byDateHotel[key].count++;
-      byDateHotel[key].amount+=r.amount||0;
-    });
-
-    var dates=Object.keys(byDateHotel).sort().reverse();
-    if(!dates.length){
-      list.innerHTML='<div style="padding:16px;text-align:center;color:#94a3b8">Aucune saisie trouvée</div>';
-      return;
-    }
-
-    var html='<div style="display:flex;flex-direction:column;gap:8px">';
-    dates.forEach(function(key){
-      var item=byDateHotel[key];
-      html+='<button onclick="loadHistoryItem(\''+item.date+'\',\''+item.hotel+'\')" '
-        +'style="padding:12px;border:1px solid #e8e8e8;border-radius:4px;text-align:left;'
-        +'background:#f8f9fa;cursor:pointer;transition:all .2s;font-family:inherit;font-size:13px"'
-        +' onmouseover="this.style.background=\'#f1f3f4\'" onmouseout="this.style.background=\'#f8f9fa\'">'
-        +'<div style="font-weight:600;color:#202124">'+item.date+' · '+item.hotel+'</div>'
-        +'<div style="font-size:11px;color:#5f6368">'+item.count+' écriture'+(item.count>1?'s':'')+' — '+fmt(item.amount)+' €</div>'
-        +'</button>';
-    });
-    html+='</div>';
-    list.innerHTML=html;
-  }catch(e){
-    list.innerHTML='<div style="padding:16px;color:#d33b27">Erreur : '+e.message+'</div>';
-  }
+  document.getElementById('hist-hotel').value='';
+  document.getElementById('hist-date').value='';
+  document.getElementById('hist-list').innerHTML='<div style="text-align:center;padding:20px;color:#94a3b8">Sélectionner hôtel et date</div>';
 }
 
 function hideHistoryModal(){
   document.getElementById('hist-modal').style.display='none';
 }
 
-async function getAllSheetData(){
-  if(inSidebar()){
-    // En sidebar: utiliser google.script.run pour accéder au Sheet
-    return new Promise(function(resolve, reject){
-      google.script.run
-        .withSuccessHandler(resolve)
-        .withFailureHandler(function(err){ reject(new Error(err)); })
-        .clientGetAllSheetData();
-    });
-  }
-  // En standalone: retourner les données actuelles (limitation)
-  return rows;
-}
+async function loadHistoryPreview(){
+  var h=document.getElementById('hist-hotel').value;
+  var d=document.getElementById('hist-date').value;
+  var list=document.getElementById('hist-list');
 
-function loadHistoryItem(date, hotel){
-  hideHistoryModal();
-  document.getElementById('sel-hotel').value=hotel;
-  document.getElementById('sel-date').value=date;
-  load();
+  if(!h||!d){
+    list.innerHTML='<div style="text-align:center;padding:20px;color:#94a3b8">Sélectionner hôtel et date</div>';
+    return;
+  }
+
+  list.innerHTML='<div style="text-align:center;padding:20px"><span class="spin"></span></div>';
+
+  try{
+    var data=await gasCall('history', {hotel:h, date:d});
+    var items=data.rows||[];
+
+    if(!items.length){
+      list.innerHTML='<div style="padding:16px;text-align:center;color:#94a3b8">Aucune écriture pour cette date</div>';
+      return;
+    }
+
+    var total_d=0, total_r=0;
+    var html='<table style="width:100%;border-collapse:collapse;font-size:12px">'
+      +'<thead><tr style="border-bottom:1px solid #e8e8e8;background:#f8f9fa">'
+      +'<th style="padding:8px;text-align:left;font-weight:600;color:#5f6368">Compte</th>'
+      +'<th style="padding:8px;text-align:left;font-weight:600;color:#5f6368">Libellé</th>'
+      +'<th style="padding:8px;text-align:right;font-weight:600;color:#5f6368">Montant</th>'
+      +'<th style="padding:8px;text-align:center;font-weight:600;color:#5f6368">Sens</th>'
+      +'</tr></thead><tbody>';
+
+    items.forEach(function(r){
+      var isd=r.sens!=='recette';
+      var amt=parseFloat(r.amount)||0;
+      if(isd) total_d+=amt; else total_r+=amt;
+      html+='<tr style="border-bottom:1px solid #f0f0f0">'
+        +'<td style="padding:8px">'+r.account+'</td>'
+        +'<td style="padding:8px">'+r.account_label+'</td>'
+        +'<td style="padding:8px;text-align:right;font-family:Courier,monospace">'+fmt(amt)+'</td>'
+        +'<td style="padding:8px;text-align:center"><span style="font-size:10px;padding:2px 6px;border-radius:2px;'
+        +(isd?'background:#fce5e6;color:#d33b27":"background:#d4edda;color:#0d652d')+'">'+
+        (isd?'Dép.':'Rec.')+'</span></td>'
+        +'</tr>';
+    });
+
+    html+='<tr style="background:#f8f9fa;font-weight:600;border-top:2px solid #e8e8e8">'
+      +'<td colspan="2" style="padding:8px">Total</td>'
+      +'<td style="padding:8px;text-align:right;color:#d33b27">-'+fmt(total_d)+'</td>'
+      +'<td style="padding:8px;text-align:right;color:#0d652d">+'+fmt(total_r)+'</td>'
+      +'</tr>'
+      +'</tbody></table>';
+    list.innerHTML=html;
+  }catch(e){
+    list.innerHTML='<div style="padding:16px;color:#d33b27">Erreur : '+e.message+'</div>';
+  }
 }
 </script>
 </body>
