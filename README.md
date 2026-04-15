@@ -86,14 +86,41 @@ Sans cela GAS sert l'ancienne version en cache.
 
 ---
 
-## Déploiement étape par étape
+## Configuration avant déploiement
 
-1. Ouvrir [script.google.com](https://script.google.com) → projet lié au sheet `Saisiesortiescaisse`
-2. Remplacer les 4 fichiers dans l'éditeur
-3. `appsscript.json` → menu **Projet** → **Paramètres** → activer "Afficher le fichier manifeste"
+### 1. Corriger les constantes dans Code.gs
+
+```javascript
+var SHEET_ID   = '1hGrdm2-g6jtCWQ_GntoA3-s_7fwFmycw17tM_Vy0n5U';  // ← ID du Sheet cible
+var SHEET_NAME = 'Sheet1';                                          // ← Nom de l'onglet
+var PROJECT_ID = 'bitool0';                                         // ← Projet BigQuery (optionnel)
+var DATASET    = 'mhs2024';                                         // ← Dataset BigQuery (optionnel)
+```
+
+**Important :**
+- `SHEET_ID` doit être accessible pour l'utilisateur qui déploie
+- Créer ou vérifier que `Sheet1` existe et a les bonnes colonnes (A–J)
+- BigQuery : laisser `PROJECT_ID` et `DATASET` vides si pas nécessaire
+
+### 2. Déploiement étape par étape
+
+1. Ouvrir [script.google.com](https://script.google.com) → projet lié au sheet
+2. Copier/coller les 4 fichiers :
+   - `Code.gs`
+   - `formulaire.html`
+   - `export.html`
+   - `appsscript.json`
+3. Menu **Projet** → **Paramètres** → cocher "Afficher le fichier manifeste"
 4. **Déployer** → **Gérer les déploiements** → ✏️ → **Nouvelle version** → Enregistrer
-5. Ouvrir le sheet → menu **📋 Caisse** apparaît automatiquement
-6. Tester en standalone : `URL_DEPLOY?action=form&hotel=FDM&date=2026-04-15`
+5. Ouvrir le sheet → menu **📋 Caisse** devrait apparaître
+
+### 3. Test
+
+**En sidebar (depuis le sheet) :**
+- Menu **📋 Caisse** → **✏️ Saisie des écritures**
+
+**En standalone (webapp) :**
+- `https://script.google.com/macros/d/SCRIPT_ID/usercurrentapp?action=form&hotel=FDM&date=2026-04-15`
 
 ---
 
@@ -162,6 +189,26 @@ Sans cela GAS sert l'ancienne version en cache.
 | 7 | Maintenance |
 | 8 | Direction |
 | 9 | Synthèse |
+
+---
+
+## Dépannage
+
+### Erreur POST ERR_FAILED
+**Cause :** `SHEET_ID` invalide ou inaccessible
+- ✓ Vérifier que l'ID est correct dans `Code.gs`
+- ✓ Vérifier que l'utilisateur a accès au sheet
+- ✓ Vérifier que `Sheet1` existe (sinon renommer l'onglet)
+
+### Erreur CORS (sidebar)
+**Cause :** Utilisation de `fetch()` au lieu de `google.script.run`
+- ✓ Le code utilise déjà `google.script.run` (pas de problème attendu)
+- ✓ Si erreur persiste : vérifier la console (F12) et l'onglet **Console** de GAS
+
+### Erreur BigQuery
+**Cause :** `PROJECT_ID` ou `DATASET` invalides
+- ✓ Laisser vides si pas d'export BigQuery prévu
+- ✓ Si nécessaire : vérifier que le projet GCP est bien lié à Apps Script
 
 ---
 
