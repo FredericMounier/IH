@@ -186,12 +186,17 @@ function doPost(e) {
       return jsonOut({ success: true });
     }
 
+    // ── BATCH SAVE ────────────────────────────────────────────────
+    if (action === 'batchSave') {
+      return jsonOut(clientBatchSave(b.items || []));
+    }
+
     // ── UPDATE ────────────────────────────────────────────────────
     if (action === 'update') {
       if (!b.row_index) return jsonOut({ error: 'row_index manquant' });
       if (!b.hotel || !b.date || !b.account || b.amount === undefined)
         return jsonOut({ error: 'Champs obligatoires manquants' });
-      if (isNaN(parseFloat(b.amount)) || parseFloat(b.amount) === 0)
+      if (isNaN(parseFloat(b.amount)))
         return jsonOut({ error: 'Montant invalide' });
       updateRow(b);
       return jsonOut({ success: true });
@@ -200,7 +205,7 @@ function doPost(e) {
     // ── INSERT (défaut) ───────────────────────────────────────────
     if (!b.hotel || !b.date || !b.account || b.amount === undefined)
       return jsonOut({ error: 'Champs obligatoires manquants' });
-    if (isNaN(parseFloat(b.amount)) || parseFloat(b.amount) === 0)
+    if (isNaN(parseFloat(b.amount)))
       return jsonOut({ error: 'Montant invalide' });
     appendRow(b);
     return jsonOut({ success: true });
@@ -532,7 +537,7 @@ function clientGetHistory(hotel, date) {
 function clientInsertRow(data) {
   if (!data.hotel || !data.date || !data.account || data.amount === undefined)
     throw new Error('Champs obligatoires manquants');
-  if (isNaN(parseFloat(data.amount)) || parseFloat(data.amount) === 0)
+  if (isNaN(parseFloat(data.amount)))
     throw new Error('Montant invalide');
   appendRow(data);
   return { success: true };
@@ -542,7 +547,7 @@ function clientUpdateRow(data) {
   if (!data.row_index) throw new Error('row_index manquant');
   if (!data.hotel || !data.date || !data.account || data.amount === undefined)
     throw new Error('Champs obligatoires manquants');
-  if (isNaN(parseFloat(data.amount)) || parseFloat(data.amount) === 0)
+  if (isNaN(parseFloat(data.amount)))
     throw new Error('Montant invalide');
   updateRow(data);
   return { success: true };
@@ -552,6 +557,22 @@ function clientDeleteRow(rowIndex) {
   if (!rowIndex) throw new Error('rowIndex manquant');
   deleteRow(parseInt(rowIndex));
   return { success: true };
+}
+
+function clientBatchSave(items) {
+  var errors = [];
+  items.forEach(function(item) {
+    try {
+      if (item.action === 'delete') {
+        deleteRow(parseInt(item.row_index));
+      } else if (item.action === 'update') {
+        updateRow(item);
+      } else {
+        appendRow(item);
+      }
+    } catch(e) { errors.push(e.message); }
+  });
+  return { success: !errors.length, errors: errors };
 }
 
 function clientGetAllSheetData() {
